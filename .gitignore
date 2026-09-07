@@ -13,6 +13,7 @@ yarn.lock
 
 # Local database
 backend/*.db
+backend/*.db-*
 
 # Build outputs
 dist/
@@ -35,3 +36,5 @@ logs/
 # OS
 Thumbs.db
 .DS_Store
+
+.vercel/
