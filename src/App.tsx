@@ -221,7 +221,6 @@ function App() {
       >
         <Topbar
           currentRole={currentRole}
-          onRoleSwitch={switchRole}
           currentUser={currentUser}
           sidebarCollapsed={sidebarCollapsed}
           setSidebarCollapsed={setSidebarCollapsed}
@@ -240,7 +239,7 @@ function App() {
           boxSizing: 'border-box'
         }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#B45309' }}>
-            ⚠️ System Demo Mode: Switch roles using the switcher or reset state anytime.
+            🔒 Signed in as {currentRole.toUpperCase()}. Log out to sign in as another role.
           </span>
           <button 
             onClick={() => {

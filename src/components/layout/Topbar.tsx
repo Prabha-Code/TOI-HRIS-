@@ -4,7 +4,6 @@ import { Menu, ChevronDown, ShieldAlert } from 'lucide-react';
 
 interface TopbarProps {
   currentRole: Role;
-  onRoleSwitch: (role: Role) => void;
   currentUser: Employee | null;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -12,7 +11,6 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({
   currentRole,
-  onRoleSwitch,
   currentUser,
   sidebarCollapsed,
   setSidebarCollapsed
@@ -96,7 +94,9 @@ export const Topbar: React.FC<TopbarProps> = ({
             return (
               <button
                 key={r.value}
-                onClick={() => onRoleSwitch(r.value)}
+                onClick={() => undefined}
+                aria-current={isActive ? 'page' : undefined}
+                aria-disabled={!isActive}
                 style={{
                   padding: '5px 12px',
                   borderRadius: '20px',
