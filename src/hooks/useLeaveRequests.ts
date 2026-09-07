@@ -62,15 +62,33 @@ export const useLeaveRequests = () => {
   }, [loadData]);
 
   // Handle role switching
-  const switchRole = useCallback(async (role: Role) => {
+  const switchRole = useCallback(async (role: Role): Promise<boolean> => {
     try {
       setLoading(true);
       await api.loginAsRole(role);
       await loadData();
       addToast(`Signed in as ${role.toUpperCase()}.`, 'success');
+      return true;
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Could not sign in.', 'error');
       setLoading(false);
+      return false;
+    }
+  }, [loadData, addToast]);
+
+  const signIn = useCallback(async (email: string, password: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      await api.login(email, password);
+      await loadData();
+      addToast('Signed in successfully.', 'success');
+      return true;
+    } catch (err) {
+      api.logout();
+      setCurrentUser(null);
+      setLoading(false);
+      addToast(err instanceof Error ? err.message : 'Could not sign in.', 'error');
+      return false;
     }
   }, [loadData, addToast]);
 
@@ -206,6 +224,7 @@ export const useLeaveRequests = () => {
     toasts,
     addToast,
     dismissToast,
+    signIn,
     switchRole,
     addEmployee,
     updateEmployee,

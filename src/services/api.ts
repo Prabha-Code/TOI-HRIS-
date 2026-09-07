@@ -95,16 +95,20 @@ const request = async <T>(path: string, options: RequestInit = {}): Promise<T> =
 export const api = {
   getStoredRole: (): Role => (localStorage.getItem(ROLE_KEY) as Role) || 'employee',
 
-  loginAsRole: async (role: Role): Promise<Employee> => {
-    const account = demoAccounts[role];
+  login: async (email: string, password: string): Promise<Employee> => {
     const response = await request<ApiResult<{ token: string; user: any }>>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(account),
+      body: JSON.stringify({ email, password }),
     });
 
     localStorage.setItem(TOKEN_KEY, response.token);
-    localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(ROLE_KEY, response.user.role);
     return toEmployee(response.user);
+  },
+
+  loginAsRole: async (role: Role): Promise<Employee> => {
+    const account = demoAccounts[role];
+    return api.login(account.email, account.password);
   },
 
   loadWorkspace: async () => {

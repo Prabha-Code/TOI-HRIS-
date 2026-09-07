@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLeaveRequests } from './hooks/useLeaveRequests';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
-import { Landing } from './pages/Landing';
+import { Login } from './pages/Login';
 import { EmployeeDashboard } from './pages/EmployeeDashboard';
 import { ManagerDashboard } from './pages/ManagerDashboard';
 import { HRDashboard } from './pages/HRDashboard';
@@ -18,6 +18,7 @@ import {
 import { Toast } from './components/ui/Toast';
 import { Button } from './components/ui/Button';
 import { LogOut } from 'lucide-react';
+import { api } from './services/api';
 
 function App() {
   const {
@@ -30,6 +31,7 @@ function App() {
     toasts,
     addToast,
     dismissToast,
+    signIn,
     switchRole,
     addEmployee,
     updateEmployee,
@@ -45,21 +47,24 @@ function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
-  const [showRoleSelection, setShowRoleSelection] = useState<boolean>(!storageHasRole());
+  const [showLogin, setShowLogin] = useState<boolean>(() => !localStorage.getItem('peopleos_api_token'));
 
-  function storageHasRole() {
-    return !!localStorage.getItem('peopleos_current_role');
-  }
+  const handleLogin = async (email: string, password: string) => {
+    const success = await signIn(email, password);
+    if (success) setShowLogin(false);
+    return success;
+  };
 
-  const handleSelectRole = (role: typeof currentRole) => {
-    switchRole(role);
-    setShowRoleSelection(false);
+  const handleDemoRole = async (role: typeof currentRole) => {
+    const success = await switchRole(role);
+    if (success) setShowLogin(false);
+    return success;
   };
 
   const handleResetData = () => {
     if (window.confirm('Are you sure you want to reset all data to default seed values?')) {
       resetDemo();
-      setShowRoleSelection(true);
+      setShowLogin(true);
       setActiveTab('dashboard');
     }
   };
@@ -85,10 +90,10 @@ function App() {
     );
   }
 
-  if (showRoleSelection || !currentUser) {
+  if (showLogin || !currentUser) {
     return (
       <>
-        <Landing onSelectRole={handleSelectRole} />
+        <Login onLogin={handleLogin} onDemoRole={handleDemoRole} error={error} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </>
     );
@@ -238,7 +243,10 @@ function App() {
             ⚠️ System Demo Mode: Switch roles using the switcher or reset state anytime.
           </span>
           <button 
-            onClick={() => setShowRoleSelection(true)}
+            onClick={() => {
+              api.logout();
+              setShowLogin(true);
+            }}
             style={{ 
               background: 'none', 
               border: 'none', 
