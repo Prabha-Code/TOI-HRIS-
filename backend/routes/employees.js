@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, roleMiddleware } = require('../middleware/auth');
 const { User, Leave } = require('../models');
 
 router.use(authMiddleware);
@@ -18,7 +18,10 @@ const defaultLeaveBalance = {
 
 router.get('/', async (req, res) => {
   try {
+    const requester = await User.findByPk(req.user.userId);
+    const where = requester.role === 'employee' ? { id: requester.id } : {};
     const employees = await User.findAll({
+      where,
       attributes: { exclude: ['password'] },
       order: [['name', 'ASC']],
     });
@@ -37,6 +40,14 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    const requester = await User.findByPk(req.user.userId);
+    if (requester.role === 'employee' && requester.id !== req.params.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Employees can only view their own profile',
+      });
+    }
+
     const employee = await User.findByPk(req.params.id, {
       attributes: { exclude: ['password'] },
     });
@@ -60,7 +71,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', roleMiddleware('manager', 'hr', 'admin'), async (req, res) => {
   try {
     const { name, email, role, title, department, avatar, managerId } = req.body;
 
@@ -103,7 +114,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', roleMiddleware('manager', 'hr', 'admin'), async (req, res) => {
   try {
     const employee = await User.findByPk(req.params.id);
 
@@ -153,7 +164,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', roleMiddleware('manager', 'hr', 'admin'), async (req, res) => {
   try {
     const employee = await User.findByPk(req.params.id);
 

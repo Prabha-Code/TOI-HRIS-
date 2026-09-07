@@ -62,15 +62,6 @@ const toLeaveRequest = (data: any): LeaveRequest => {
   };
 };
 
-const toPayrollRun = (data: any): PayrollRun => ({
-  id: data.id || data._id,
-  month: data.month,
-  employees: Number(data.employees) || 0,
-  grossPay: Number(data.grossPay) || 0,
-  status: data.status,
-  dueDate: normalizeDate(data.dueDate),
-});
-
 const request = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers: Record<string, string> = {
@@ -112,11 +103,10 @@ export const api = {
   },
 
   loadWorkspace: async () => {
-    const [me, employees, leaves, payroll] = await Promise.all([
+    const [me, employees, leaves] = await Promise.all([
       request<ApiResult<{ user: any }>>('/auth/me'),
       request<ApiResult<{ employees: any[] }>>('/employees'),
       request<ApiResult<{ leaves: any[] }>>('/leaves'),
-      request<ApiResult<{ payrollRuns: any[] }>>('/payroll'),
     ]);
 
     return {
@@ -124,7 +114,6 @@ export const api = {
       currentRole: me.user.role as Role,
       employees: employees.employees.map(toEmployee),
       requests: leaves.leaves.map(toLeaveRequest),
-      payrollRuns: payroll.payrollRuns.map(toPayrollRun),
     };
   },
 

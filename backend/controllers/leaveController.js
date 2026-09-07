@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Leave, User } = require('../models');
 
 const serializeUser = (user) => {
@@ -132,7 +133,14 @@ exports.getMyLeaves = async (req, res) => {
 exports.getAllLeaves = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.userId);
-    const where = user && user.role === 'employee' ? { employeeId: req.user.userId } : {};
+    let where = {};
+
+    if (user && user.role === 'employee') {
+      where = { employeeId: req.user.userId };
+    } else if (user && user.role === 'manager') {
+      const team = await User.findAll({ where: { managerId: req.user.userId }, attributes: ['id'] });
+      where = { employeeId: { [Op.in]: [req.user.userId, ...team.map((member) => member.id)] } };
+    }
 
     const leaves = await Leave.findAll({
       where,
@@ -157,8 +165,16 @@ exports.getAllLeaves = async (req, res) => {
 
 exports.getPendingRequests = async (req, res) => {
   try {
+    const user = await User.findByPk(req.user.userId);
+    const where = { status: 'pending' };
+
+    if (user && user.role === 'manager') {
+      const team = await User.findAll({ where: { managerId: req.user.userId }, attributes: ['id'] });
+      where.employeeId = { [Op.in]: team.map((member) => member.id) };
+    }
+
     const leaves = await Leave.findAll({
-      where: { status: 'pending' },
+      where,
       include: [{ model: User, as: 'employee', attributes: ['id', 'name', 'email', 'department'] }],
       order: [['createdAt', 'DESC']]
     });

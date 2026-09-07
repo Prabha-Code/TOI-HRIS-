@@ -14,7 +14,7 @@ const serializeRun = (run) => {
   };
 };
 
-router.get('/', async (req, res) => {
+router.get('/', roleMiddleware('hr', 'admin'), async (req, res) => {
   try {
     const runs = await PayrollRun.findAll({ order: [['dueDate', 'DESC']] });
     res.json({ success: true, payrollRuns: runs.map(serializeRun) });

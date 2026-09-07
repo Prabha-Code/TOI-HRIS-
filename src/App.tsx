@@ -201,6 +201,7 @@ function App() {
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}>
       {/* Sidebar navigation */}
       <Sidebar
+        currentRole={currentRole}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         collapsed={sidebarCollapsed}

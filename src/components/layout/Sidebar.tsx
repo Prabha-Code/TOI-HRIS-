@@ -11,7 +11,9 @@ import {
   ChevronLeft, 
   RotateCcw
 } from 'lucide-react';
+import { Role } from '../../types/leave';
 interface SidebarProps {
+  currentRole: Role;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   collapsed: boolean;
@@ -20,12 +22,19 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  currentRole,
   activeTab,
   setActiveTab,
   collapsed,
   setCollapsed,
   onReset
 }) => {
+
+  const allowedTabs: Record<Role, string[]> = {
+    employee: ['dashboard', 'leave'],
+    manager: ['dashboard', 'employees', 'teams', 'organization', 'leave', 'performance'],
+    hr: ['dashboard', 'employees', 'teams', 'organization', 'leave', 'performance', 'recruitment', 'payroll']
+  };
 
   const navSections = [
     {
@@ -179,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             )}
             
-            {section.items.map(item => {
+            {section.items.filter(item => allowedTabs[currentRole].includes(item.id)).map(item => {
               const isActive = activeTab === item.id;
               return (
                 <button
