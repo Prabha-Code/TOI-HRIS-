@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LeaveRequest, Employee, Role, LeaveType } from '../types/leave';
-import { leaveService } from '../services/leaveService';
-import { storage } from '../services/storage';
+import { api } from '../services/api';
 
 export interface ToastMessage {
   id: string;
@@ -34,25 +33,20 @@ export const useLeaveRequests = () => {
   }, []);
 
   // Fetch/load data from storage
-  const loadData = useCallback((roleOverride?: Role) => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const allRequests = leaveService.getRequests();
-      const allEmployees = leaveService.getEmployees();
-      const activeRole = roleOverride || storage.getCurrentRole();
-      const activeUserId = storage.getCurrentUserId();
-      const activeUser = leaveService.getEmployeeById(activeUserId);
 
-      setRequests(allRequests);
-      setEmployees(allEmployees);
-      setCurrentRole(activeRole);
-      setCurrentUser(activeUser || null);
+      const workspace = await api.loadWorkspace();
+      setRequests(workspace.requests);
+      setEmployees(workspace.employees);
+      setCurrentRole(workspace.currentRole);
+      setCurrentUser(workspace.currentUser);
     } catch (err) {
       console.error(err);
-      setError('Could not load leave request data. Please try resetting.');
-      addToast('Failed to load application data.', 'error');
+      setError(err instanceof Error ? err.message : 'Could not load application data.');
+      setCurrentUser(null);
     } finally {
       setLoading(false);
     }
@@ -60,136 +54,147 @@ export const useLeaveRequests = () => {
 
   // Initial load
   useEffect(() => {
-    loadData();
+    if (localStorage.getItem('peopleos_api_token')) {
+      void loadData();
+    } else {
+      setLoading(false);
+    }
   }, [loadData]);
 
   // Handle role switching
-  const switchRole = useCallback((role: Role) => {
-    storage.setCurrentRole(role);
-    loadData(role);
-    addToast(`Switched view to ${role.toUpperCase()} dashboard.`, 'info');
+  const switchRole = useCallback(async (role: Role) => {
+    try {
+      setLoading(true);
+      await api.loginAsRole(role);
+      await loadData();
+      addToast(`Signed in as ${role.toUpperCase()}.`, 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Could not sign in.', 'error');
+      setLoading(false);
+    }
   }, [loadData, addToast]);
 
   // Submit new leave request
-  const submitRequest = useCallback((
+  const submitRequest = useCallback(async (
     leaveType: LeaveType,
     startDate: string,
     endDate: string,
     reason: string
-  ): boolean => {
+  ): Promise<boolean> => {
     if (!currentUser) {
       addToast('No active user profile selected.', 'error');
       return false;
     }
 
-    const result = leaveService.submitRequest(
-      currentUser.id,
-      leaveType,
-      startDate,
-      endDate,
-      reason
-    );
-
-    if (result.success) {
+    try {
+      await api.submitLeave(leaveType, startDate, endDate, reason);
       addToast('Leave request submitted successfully!', 'success');
-      loadData();
+      await loadData();
       return true;
-    } else {
-      addToast(result.error || 'Failed to submit leave request.', 'error');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to submit leave request.', 'error');
       return false;
     }
   }, [currentUser, loadData, addToast]);
 
-  const addEmployee = useCallback((employee: Omit<Employee, 'id' | 'balances'>): boolean => {
-    const result = leaveService.addEmployee(employee);
-    if (result.success) {
+  const addEmployee = useCallback(async (employee: Omit<Employee, 'id' | 'balances'>): Promise<boolean> => {
+    try {
+      await api.addEmployee(employee);
       addToast('Employee added successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to add employee.', 'error');
+      return false;
     }
-    addToast(result.error || 'Failed to add employee.', 'error');
-    return false;
   }, [loadData, addToast]);
 
-  const updateEmployee = useCallback((employeeId: string, updates: Omit<Employee, 'id' | 'balances'>): boolean => {
-    const result = leaveService.updateEmployee(employeeId, updates);
-    if (result.success) {
+  const updateEmployee = useCallback(async (employeeId: string, updates: Omit<Employee, 'id' | 'balances'>): Promise<boolean> => {
+    try {
+      await api.updateEmployee(employeeId, updates);
       addToast('Employee updated successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to update employee.', 'error');
+      return false;
     }
-    addToast(result.error || 'Failed to update employee.', 'error');
-    return false;
   }, [loadData, addToast]);
 
-  const deleteEmployee = useCallback((employeeId: string): boolean => {
-    const result = leaveService.deleteEmployee(employeeId);
-    if (result.success) {
+  const deleteEmployee = useCallback(async (employeeId: string): Promise<boolean> => {
+    try {
+      await api.deleteEmployee(employeeId);
       addToast('Employee deleted successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to delete employee.', 'error');
+      return false;
     }
-    addToast(result.error || 'Failed to delete employee.', 'error');
-    return false;
   }, [loadData, addToast]);
 
   // Approve a leave request
-  const approveRequest = useCallback((requestId: string): boolean => {
-    const result = leaveService.approveRequest(requestId);
-    if (result.success) {
+  const approveRequest = useCallback(async (requestId: string): Promise<boolean> => {
+    try {
+      await api.approveLeave(requestId);
       addToast('Leave request approved successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
-    } else {
-      addToast(result.error || 'Failed to approve request.', 'error');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to approve request.', 'error');
       return false;
     }
   }, [loadData, addToast]);
 
   // Reject a leave request
-  const rejectRequest = useCallback((requestId: string, rejectionReason?: string): boolean => {
-    const result = leaveService.rejectRequest(requestId, rejectionReason);
-    if (result.success) {
+  const rejectRequest = useCallback(async (requestId: string, rejectionReason?: string): Promise<boolean> => {
+    try {
+      await api.rejectLeave(requestId, rejectionReason);
       addToast('Leave request rejected.', 'warning');
-      loadData();
+      await loadData();
       return true;
-    } else {
-      addToast(result.error || 'Failed to reject request.', 'error');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to reject request.', 'error');
       return false;
     }
   }, [loadData, addToast]);
 
-  const updateRequest = useCallback((
+  const updateRequest = useCallback(async (
     requestId: string,
     updates: Pick<LeaveRequest, 'leaveType' | 'startDate' | 'endDate' | 'reason'>
-  ): boolean => {
-    const result = leaveService.updateRequest(requestId, updates);
-    if (result.success) {
+  ): Promise<boolean> => {
+    try {
+      await api.updateLeave(requestId, updates);
       addToast('Leave request updated successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to update leave request.', 'error');
+      return false;
     }
-    addToast(result.error || 'Failed to update leave request.', 'error');
-    return false;
   }, [loadData, addToast]);
 
-  const deleteRequest = useCallback((requestId: string): boolean => {
-    const result = leaveService.deleteRequest(requestId);
-    if (result.success) {
+  const deleteRequest = useCallback(async (requestId: string): Promise<boolean> => {
+    try {
+      await api.deleteLeave(requestId);
       addToast('Leave request deleted successfully.', 'success');
-      loadData();
+      await loadData();
       return true;
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to delete leave request.', 'error');
+      return false;
     }
-    addToast(result.error || 'Failed to delete leave request.', 'error');
-    return false;
   }, [loadData, addToast]);
 
   // Reset demo storage data
   const resetDemo = useCallback(() => {
-    storage.resetAll();
-    loadData();
-    addToast('Demo application data reset to initial seed values.', 'success');
-  }, [loadData, addToast]);
+    api.logout();
+    localStorage.removeItem('peopleos_current_role');
+    setCurrentUser(null);
+    setRequests([]);
+    setEmployees([]);
+    addToast('Signed out. Choose a role to sign in again.', 'info');
+  }, [addToast]);
 
   return {
     requests,

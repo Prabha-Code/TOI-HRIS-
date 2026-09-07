@@ -31,7 +31,9 @@ npm run dev
 # Open http://localhost:5173
 ```
 
-The root `src/` application is the supported frontend. The `frontend/` directory is retained only for compatibility with older documentation; running `npm run dev` or `npm start` there forwards to the modern root application.
+The root `src/` application is the supported frontend. It authenticates demo roles through the Express API and persists leave, employee, and payroll operations through the database. The `frontend/` directory is retained only for compatibility with older documentation; running `npm run dev` or `npm start` there forwards to the modern root application.
+
+For deployment, host the frontend on Vercel and the backend on an API host such as Render. Set `VITE_API_URL` in Vercel to the deployed backend URL ending in `/api`. Configure the backend with PostgreSQL using `backend/.env.example`; SQLite is intended for local development only.
 
 ### Demo Accounts
 

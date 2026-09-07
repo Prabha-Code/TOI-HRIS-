@@ -16,8 +16,8 @@ import { MANAGER_METRICS } from '../data/seedData';
 interface ManagerDashboardProps {
   requests: LeaveRequest[];
   employees: Employee[];
-  onApproveLeave: (id: string) => boolean;
-  onRejectLeave: (id: string, reason?: string) => boolean;
+  onApproveLeave: (id: string) => boolean | Promise<boolean>;
+  onRejectLeave: (id: string, reason?: string) => boolean | Promise<boolean>;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   onNavigate: (tab: string) => void;
 }
@@ -52,8 +52,8 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     );
   });
 
-  const handleApprove = (id: string) => {
-    onApproveLeave(id);
+  const handleApprove = async (id: string) => {
+    await onApproveLeave(id);
     if (selectedRequest?.id === id) {
       setSelectedRequest(null);
     }
@@ -65,9 +65,9 @@ export const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     setIsRejectionModalOpen(true);
   };
 
-  const handleRejectSubmit = () => {
+  const handleRejectSubmit = async () => {
     if (!rejectingRequestId) return;
-    onRejectLeave(rejectingRequestId, rejectionReason);
+    await onRejectLeave(rejectingRequestId, rejectionReason);
     setIsRejectionModalOpen(false);
     setRejectingRequestId(null);
     if (selectedRequest?.id === rejectingRequestId) {

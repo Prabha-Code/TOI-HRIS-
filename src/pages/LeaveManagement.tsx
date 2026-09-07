@@ -14,11 +14,11 @@ interface LeaveManagementProps {
   currentUser: Employee | null;
   requests: LeaveRequest[];
   employees: Employee[];
-  onSubmitLeave: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean;
-  onApproveLeave: (id: string) => boolean;
-  onRejectLeave: (id: string, reason?: string) => boolean;
-  onUpdateLeave: (id: string, updates: Pick<LeaveRequest, 'leaveType' | 'startDate' | 'endDate' | 'reason'>) => boolean;
-  onDeleteLeave: (id: string) => boolean;
+  onSubmitLeave: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean | Promise<boolean>;
+  onApproveLeave: (id: string) => boolean | Promise<boolean>;
+  onRejectLeave: (id: string, reason?: string) => boolean | Promise<boolean>;
+  onUpdateLeave: (id: string, updates: Pick<LeaveRequest, 'leaveType' | 'startDate' | 'endDate' | 'reason'>) => boolean | Promise<boolean>;
+  onDeleteLeave: (id: string) => boolean | Promise<boolean>;
 }
 
 export const LeaveManagement: React.FC<LeaveManagementProps> = ({
@@ -85,13 +85,13 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
     rejected: scopedRequests.filter(req => req.status === 'rejected').length
   };
 
-  const handleLeaveSubmit = (
+  const handleLeaveSubmit = async (
     leaveType: LeaveType,
     startDate: string,
     endDate: string,
     reason: string
   ) => {
-    const success = onSubmitLeave(leaveType, startDate, endDate, reason);
+    const success = await onSubmitLeave(leaveType, startDate, endDate, reason);
     if (success) {
       setSearchTerm('');
       setFilterType('all');
@@ -100,8 +100,8 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
     return success;
   };
 
-  const handleApprove = (id: string) => {
-    onApproveLeave(id);
+  const handleApprove = async (id: string) => {
+    await onApproveLeave(id);
     if (selectedRequest?.id === id) {
       setSelectedRequest(null);
     }
@@ -117,17 +117,17 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
     });
   };
 
-  const handleEditSubmit = () => {
+  const handleEditSubmit = async () => {
     if (!editingRequest) return;
-    const success = onUpdateLeave(editingRequest.id, editForm);
+    const success = await onUpdateLeave(editingRequest.id, editForm);
     if (success) {
       setEditingRequest(null);
     }
   };
 
-  const handleDelete = (request: LeaveRequest) => {
+  const handleDelete = async (request: LeaveRequest) => {
     if (window.confirm(`Delete ${request.employeeName}'s ${request.leaveType} leave request?`)) {
-      onDeleteLeave(request.id);
+      await onDeleteLeave(request.id);
       if (selectedRequest?.id === request.id) {
         setSelectedRequest(null);
       }
@@ -140,9 +140,9 @@ export const LeaveManagement: React.FC<LeaveManagementProps> = ({
     setIsRejectionModalOpen(true);
   };
 
-  const handleRejectSubmit = () => {
+  const handleRejectSubmit = async () => {
     if (!rejectingRequestId) return;
-    onRejectLeave(rejectingRequestId, rejectionReason);
+    await onRejectLeave(rejectingRequestId, rejectionReason);
     setIsRejectionModalOpen(false);
     setRejectingRequestId(null);
     if (selectedRequest?.id === rejectingRequestId) {

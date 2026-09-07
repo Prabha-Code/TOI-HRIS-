@@ -10,7 +10,7 @@ interface LeaveRequestFormProps {
   balances: EmployeeBalances;
   existingRequests: LeaveRequest[];
   employeeId: string;
-  onSubmit: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean;
+  onSubmit: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean | Promise<boolean>;
   onCancel?: () => void;
 }
 
@@ -39,7 +39,7 @@ export const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({
     }
   }, [startDate, endDate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const validation = validateLeaveRequest(
@@ -55,7 +55,7 @@ export const LeaveRequestForm: React.FC<LeaveRequestFormProps> = ({
     }
 
     setErrors({});
-    const success = onSubmit(leaveType as LeaveType, startDate, endDate, reason);
+    const success = await onSubmit(leaveType as LeaveType, startDate, endDate, reason);
     if (success) {
       // Clear form
       setStartDate('');

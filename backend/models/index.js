@@ -54,6 +54,28 @@ const seedDemoAccounts = async () => {
       }
     };
 
+    const normalizeLeaveBalance = (balance) => {
+      if (!balance) {
+        return { annual: 30, sick: 10, personal: 5 };
+      }
+
+      return {
+        annual: balance.annual ?? balance.earned ?? balance.casual ?? 30,
+        sick: balance.sick ?? balance.medical ?? 10,
+        personal: balance.personal ?? balance.casual ?? 5,
+      };
+    };
+
+    const normalizeLeaveType = async () => {
+      if (dialect !== 'sqlite') {
+        return;
+      }
+
+      await sequelize.query("UPDATE leaves SET leaveType = 'annual' WHERE leaveType = 'earned'");
+      await sequelize.query("UPDATE leaves SET leaveType = 'sick' WHERE leaveType = 'medical'");
+      await sequelize.query("UPDATE leaves SET leaveType = 'personal' WHERE leaveType = 'casual'");
+    };
+
     const demoUsers = [
       {
         name: 'Jane Manager',
@@ -119,7 +141,8 @@ const seedDemoAccounts = async () => {
           role: demoUser.role,
           department: demoUser.department,
           title: demoUser.title,
-          avatar: demoUser.avatar
+          avatar: demoUser.avatar,
+          leaveBalance: normalizeLeaveBalance(user.leaveBalance)
         });
       }
 
@@ -149,6 +172,8 @@ const seedDemoAccounts = async () => {
         defaults: run
       });
     }
+
+    await normalizeLeaveType();
   } catch (error) {
     console.error('Seeding error:', error);
   }

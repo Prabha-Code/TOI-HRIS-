@@ -37,9 +37,9 @@ interface ModuleProps {
   employees: Employee[];
   requests: LeaveRequest[];
   addToast: ToastFn;
-  onAddEmployee?: (employee: EmployeeFormData) => boolean;
-  onUpdateEmployee?: (employeeId: string, updates: EmployeeFormData) => boolean;
-  onDeleteEmployee?: (employeeId: string) => boolean;
+  onAddEmployee?: (employee: EmployeeFormData) => boolean | Promise<boolean>;
+  onUpdateEmployee?: (employeeId: string, updates: EmployeeFormData) => boolean | Promise<boolean>;
+  onDeleteEmployee?: (employeeId: string) => boolean | Promise<boolean>;
 }
 
 const pageHeaderStyle: React.CSSProperties = {
@@ -197,19 +197,19 @@ export const EmployeesPage: React.FC<ModuleProps> = ({
     setIsEditorOpen(true);
   };
 
-  const saveEmployee = () => {
+  const saveEmployee = async () => {
     const success = editingEmployee
-      ? onUpdateEmployee?.(editingEmployee.id, formValue)
-      : onAddEmployee?.(formValue);
+      ? await onUpdateEmployee?.(editingEmployee.id, formValue)
+      : await onAddEmployee?.(formValue);
 
     if (success) {
       setIsEditorOpen(false);
     }
   };
 
-  const deleteEmployee = (employee: Employee) => {
+  const deleteEmployee = async (employee: Employee) => {
     if (window.confirm(`Delete ${employee.name} and their leave requests?`)) {
-      onDeleteEmployee?.(employee.id);
+      await onDeleteEmployee?.(employee.id);
     }
   };
 

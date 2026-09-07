@@ -20,7 +20,7 @@ import {
 interface EmployeeDashboardProps {
   currentUser: Employee;
   requests: LeaveRequest[];
-  onSubmitLeave: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean;
+  onSubmitLeave: (leaveType: LeaveType, startDate: string, endDate: string, reason: string) => boolean | Promise<boolean>;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   onNavigate: (tab: string) => void;
 }
@@ -48,13 +48,13 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
     ? Math.min(100, Math.round((usedDays / currentUser.balances.annual.total) * 100))
     : 0;
 
-  const handleLeaveSubmit = (
+  const handleLeaveSubmit = async (
     leaveType: LeaveType,
     startDate: string,
     endDate: string,
     reason: string
   ) => {
-    const success = onSubmitLeave(leaveType, startDate, endDate, reason);
+    const success = await onSubmitLeave(leaveType, startDate, endDate, reason);
     if (success) {
       setIsLeaveModalOpen(false);
     }
