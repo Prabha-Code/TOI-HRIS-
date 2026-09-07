@@ -18,7 +18,6 @@ import {
 import { Toast } from './components/ui/Toast';
 import { Button } from './components/ui/Button';
 import { LogOut } from 'lucide-react';
-import { api } from './services/api';
 
 function App() {
   const {
@@ -67,6 +66,12 @@ function App() {
       setShowLogin(true);
       setActiveTab('dashboard');
     }
+  };
+
+  const handleLogout = () => {
+    resetDemo();
+    setShowLogin(true);
+    setActiveTab('dashboard');
   };
 
   if (loading) {
@@ -240,13 +245,10 @@ function App() {
           boxSizing: 'border-box'
         }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#B45309' }}>
-            🔒 Signed in as {currentRole.toUpperCase()}. Log out to sign in as another role.
+            🔒 Signed in as {currentRole.toUpperCase()}.
           </span>
           <button 
-            onClick={() => {
-              api.logout();
-              setShowLogin(true);
-            }}
+            onClick={handleLogout}
             style={{ 
               background: 'none', 
               border: 'none', 
@@ -262,7 +264,7 @@ function App() {
             onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
           >
             <LogOut size={12} />
-            Exit Simulation Frame
+            Log out
           </button>
         </div>
 
